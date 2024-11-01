@@ -1,4 +1,4 @@
-class SLAM:
+class Odometry:
     def __init__(self):
         # Setup Sensors:
         self.sensors()
@@ -22,39 +22,27 @@ class SLAM:
 
             {'type': 'sensor.camera.rgb', 'x': 0.7, 'y': 0.4, 'z': 1.60, 'roll': 0.0, 'pitch': 0.0, 'yaw': 0.0,
                       'width': 300, 'height': 200, 'fov': 100, 'id': 'Right'},
-
-            {'type': 'sensor.lidar.ray_cast', 'x': 0.7, 'y': 0.0, 'z': 1.60, 'yaw': 0.0, 'pitch': 0.0, 'roll': 0.0,
-             'id': 'LIDAR'}
         ]
 
         """
+        # Do not change
         sensors = [
             {'type': 'sensor.camera.rgb', 'x': 0.7, 'y': -0.4, 'z': 1.60, 'roll': 0.0, 'pitch': 0.0, 'yaw': 0.0,
                       'width': 1280, 'height': 720, 'fov': 100, 'id': 'Left'},
 
             {'type': 'sensor.camera.rgb', 'x': 0.7, 'y': 0.4, 'z': 1.60, 'roll': 0.0, 'pitch': 0.0, 'yaw': 0.0,
                       'width': 1280, 'height': 720, 'fov': 100, 'id': 'Right'},
-
-            {'type': 'sensor.lidar.ray_cast', 'x': 0.7, 'y': 0.0, 'z': 1.60, 'yaw': 0.0, 'pitch': 0.0, 'roll': 0.0,
-                      'range': 50, 
-                      'rotation_frequency': 20, 'channels': 64,
-                      'upper_fov': 4, 'lower_fov': -20, 'points_per_second': 2304000,
-                      'id': 'LIDAR'},
-
-            {'type': 'sensor.other.gnss', 'x': 0.7, 'y': -0.4, 'z': 1.60, 'id': 'GPS'}
         ]
 
         return sensors
 
-    def get_trajectory(self, sensor_data):
+    def get_trajectory(self, sensor_data, prev_sensor_data):
         """Compute trajectory using 
         """
-        try:
-            prev_sensor_data = sensor_data[-2]
-        except:
-            # On the first step, prev_sensor_data will be None
-            return None
-        
+        # Prev sensor data on initialization would be None
+        if prev_sensor_data is None:
+            return {}
+
         return {}
 
     
