@@ -640,6 +640,7 @@ class CameraManager(object):
         self.visualize_trajectory = False # Trigger for visualization
 
         self.gt_trajectories = []
+        self.est_trajectories = []
 
     def add_sensor(self, sensor_info):
         """Add a sensor
@@ -721,20 +722,16 @@ class CameraManager(object):
     def get_gt_trajectory(self):
         '''Get camera trajectory from blueprint
         '''
-        # pdb.set_trace()
-        world2camera = inv_matrix = np.array(self.sensor.get_transform().get_inverse_matrix())
-        gt_trajectory = self.sensor.get_location()
+        # Camera locations are in world coordinates
+        gt_loc = self.sensor.get_location()
         gt_trajectory = np.array([gt_trajectory.x, gt_trajectory.y, gt_trajectory.z]).reshape((3,1))
 
-        R = np.diag([1,1,1])
-        T = gt_trajectory
-        RT = np.hstack([R, T])
-        RT = np.vstack([RT, np.array([0,0,0,1])])
-        # pdb.set_trace()
-
         self.gt_trajectories.append(gt_trajectory)
-
-        pass
+    
+    def update_est_trajectories(self,latest_trajectory):
+        '''Update the estimated trajectories list with the latest trajectory
+        '''
+        est_trajectories.append(latest_trajectory)
         
     def project_to_lidar_pygame(self, points):
         """Transform lidar points from LiDAR 3D coordinates to pygame BEV 2D plane
@@ -856,6 +853,9 @@ def game_loop(args):
             world.render(display)
             pygame.display.flip()
 
+            # Update with latest trajectory
+            world.camera_manager.update_est_trajectories(agent.latest_trajectory)
+
             if agent.done():
                 if args.loop:
                     agent.set_destination(random.choice(spawn_points).location)
@@ -880,7 +880,7 @@ def game_loop(args):
             settings.fixed_delta_seconds = None
             world.world.apply_settings(settings)
             traffic_manager.set_synchronous_mode(True)
-            agent.destroy()
+            agent.destroy(world.camera_manager.gt_trajectories, world.camera_manager.est_trajectories)
             world.destroy()
 
         pygame.quit()

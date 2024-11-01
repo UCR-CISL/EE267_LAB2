@@ -74,12 +74,12 @@ class BehaviorAgent(BasicAgent):
         self._odometry = Odometry()
 
         # Latest trajectory
-        self.estimated_trajectories = []
+        self.latest_trajectory = None
 
         # Keep track of prev sensor data
         self.prev_sensor_data = None
 
-    def destroy(self):
+    def destroy(self, gt_trajectories, est_trajectories):
         # TODO: compute and print ATE
         # AbsoluteTrajectoryError()
         pass
@@ -277,8 +277,8 @@ class BehaviorAgent(BasicAgent):
         # SLAM (Modify as needed)
         sensor_data = self.get_sensor_data()
 
-        # Update estimated trajectory list
-        self.estimated_trajectories.append(self._odometry.get_trajectory(sensor_data, self.prev_sensor_data))
+        # Update latest estimated trajectory 
+        self.latest_trajectory = self._odometry.get_trajectory(sensor_data, self.prev_sensor_data)
 
         # Update prev sensor data
         self.prev_sensor_data = sensor_data
