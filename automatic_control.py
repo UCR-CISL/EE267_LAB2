@@ -724,14 +724,12 @@ class CameraManager(object):
         '''
         # Camera locations are in world coordinates
         gt_loc = self.sensor.get_location()
-        gt_trajectory = np.array([gt_trajectory.x, gt_trajectory.y, gt_trajectory.z]).reshape((3,1))
-
-        self.gt_trajectories.append(gt_trajectory)
+        self.gt_trajectories.append(np.array([gt_loc.x, gt_loc.y, gt_loc.z]).reshape((3,1)))
     
     def update_est_trajectories(self,latest_trajectory):
         '''Update the estimated trajectories list with the latest trajectory
         '''
-        est_trajectories.append(latest_trajectory)
+        self.est_trajectories.append(latest_trajectory)
         
     def project_to_lidar_pygame(self, points):
         """Transform lidar points from LiDAR 3D coordinates to pygame BEV 2D plane
