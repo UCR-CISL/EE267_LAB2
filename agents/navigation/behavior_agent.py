@@ -17,8 +17,10 @@ from agents.navigation.behavior_types import Cautious, Aggressive, Normal
 
 from agents.tools.misc import get_speed, positive, is_within_distance, compute_distance
 
-from slam import SLAM  # pylint: disable=import-rror
+from odometry import Odometry  # pylint: disable=import-rror
 import pdb
+
+from utils.ate import AbsoluteTrajectoryError
 
 class BehaviorAgent(BasicAgent):
     """
@@ -68,21 +70,22 @@ class BehaviorAgent(BasicAgent):
         elif behavior == 'aggressive':
             self._behavior = Aggressive()
 
-        # Initalize SLAM
-        self._slam = SLAM()
+        # Initalize Odometry
+        self._odometry = Odometry()
 
         # Latest trajectory
         self.estimated_trajectories = []
 
-        # Keep track of gt trajectories
-        self.gt_trajectories = []
+        # Keep track of prev sensor data
+        self.prev_sensor_data = None
 
     def destroy(self):
         # TODO: compute and print ATE
+        # AbsoluteTrajectoryError()
         pass
     
     def sensors(self):  # pylint: disable=no-self-use
-        sensors = self._slam.sensors()
+        sensors = self._odometry.sensors()
         for s in sensors:
             s['x'] = s['x']*self.bound_x
             s['y'] = s['y']*self.bound_y
@@ -263,13 +266,6 @@ class BehaviorAgent(BasicAgent):
             control = self._local_planner.run_step(debug=debug)
 
         return control
-    
-    def get_gt_trajectory(self, sensor_data):
-        '''Extract gound truth trajectory from camera locations
-        '''
-
-        # world2camera = np.array()
-
 
     def run_step(self, debug=False):
         """
@@ -278,15 +274,14 @@ class BehaviorAgent(BasicAgent):
             :param debug: boolean for debugging
             :return control: carla.VehicleControl
         """
-        # SLAM (Modify if nessecary)
+        # SLAM (Modify as needed)
         sensor_data = self.get_sensor_data()
-        
-        # Get ground truth trajectory
-        self.get_gt_trajectory(sensor_data)
-        
 
         # Update estimated trajectory list
-        self.estimated_trajectories.append(self._slam.get_trajectory(sensor_data))
+        self.estimated_trajectories.append(self._odometry.get_trajectory(sensor_data, self.prev_sensor_data))
+
+        # Update prev sensor data
+        self.prev_sensor_data = sensor_data
 
         # Behavior Agent Updates (Do not modify):
         

@@ -22,6 +22,7 @@ import re
 import sys
 import weakref
 
+import pdb
 
 try:
     import pygame
@@ -638,7 +639,7 @@ class CameraManager(object):
 
         self.visualize_trajectory = False # Trigger for visualization
 
-        # self.
+        self.gt_trajectories = []
 
     def add_sensor(self, sensor_info):
         """Add a sensor
@@ -670,7 +671,7 @@ class CameraManager(object):
 
             self.sensors.append(sensor)
             self._camera_transforms.append(transform)
-    
+
     def add_trajectory_visualizer(self):
         '''
         '''
@@ -716,6 +717,24 @@ class CameraManager(object):
         """Render method"""
         if self.surface is not None:
             display.blit(self.surface, (0, 0))
+    
+    def get_gt_trajectory(self):
+        '''Get camera trajectory from blueprint
+        '''
+        # pdb.set_trace()
+        world2camera = inv_matrix = np.array(self.sensor.get_transform().get_inverse_matrix())
+        gt_trajectory = self.sensor.get_location()
+        gt_trajectory = np.array([gt_trajectory.x, gt_trajectory.y, gt_trajectory.z]).reshape((3,1))
+
+        R = np.diag([1,1,1])
+        T = gt_trajectory
+        RT = np.hstack([R, T])
+        RT = np.vstack([RT, np.array([0,0,0,1])])
+        # pdb.set_trace()
+
+        self.gt_trajectories.append(gt_trajectory)
+
+        pass
         
     def project_to_lidar_pygame(self, points):
         """Transform lidar points from LiDAR 3D coordinates to pygame BEV 2D plane
@@ -746,6 +765,9 @@ class CameraManager(object):
             lidar_img[tuple(lidar_data.T)] = (255, 255, 255)
             self.surface = pygame.surfarray.make_surface(lidar_img)
         else:
+            # obtain gt_trajectory
+            self.get_gt_trajectory()
+
             image.convert(self.sensors[self.index][1])
             array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
             array = np.reshape(array, (image.height, image.width, 4))
