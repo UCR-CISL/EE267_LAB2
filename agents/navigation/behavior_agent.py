@@ -277,7 +277,7 @@ class BehaviorAgent(BasicAgent):
         # SLAM (Modify as needed)
         sensor_data = self.get_sensor_data()
 
-        # Update latest estimated trajectory 
+        # Update latest estimated trajectory
         self.latest_trajectory = self._odometry.get_trajectory(sensor_data, self.prev_sensor_data)
 
         # Update prev sensor data

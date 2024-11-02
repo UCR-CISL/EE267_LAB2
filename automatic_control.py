@@ -728,8 +728,14 @@ class CameraManager(object):
     
     def update_est_trajectories(self,latest_trajectory):
         '''Update the estimated trajectories list with the latest trajectory
+            :param latest_trajectory (4,)
         '''
-        self.est_trajectories.append(latest_trajectory)
+        # Convert estimated trajectory from camera to world
+        camera2world = np.array(self.sensor.get_transform().get_matrix()) # (4x4) A Matrix
+        
+        if latest_trajectory != None:
+            world_traj = np.dot(camera2world, latest_trajectory)
+            self.est_trajectories.append(world_traj)
         
     def project_to_lidar_pygame(self, points):
         """Transform lidar points from LiDAR 3D coordinates to pygame BEV 2D plane

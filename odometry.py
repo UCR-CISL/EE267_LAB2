@@ -41,8 +41,8 @@ class Odometry:
         """
         # Prev sensor data on initialization would be None
         if prev_sensor_data is None:
-            return {}
+            return None
 
-        return {}
+        return None
 
     
