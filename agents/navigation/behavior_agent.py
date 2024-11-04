@@ -81,7 +81,13 @@ class BehaviorAgent(BasicAgent):
 
     def destroy(self, gt_trajectories, est_trajectories):
         # TODO: compute and print ATE
-        # AbsoluteTrajectoryError()
+        print('gt trajectories len:',len(gt_trajectories))
+        print('est trajectories len:',len(est_trajectories))
+        ate = AbsoluteTrajectoryError(gt_trajectories, est_trajectories)
+        err = ate.compute_trajectory_error()
+        print('Errors:',err)
+        stats = ate.get_statisticsI()
+        print(stats)
         pass
     
     def sensors(self):  # pylint: disable=no-self-use

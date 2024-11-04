@@ -68,7 +68,6 @@ from agents.navigation.agent_wrapper import AgentWrapper  # pylint: disable=impo
 
 from utils.transform import Transform
 # from utils.pygame_drawing import PyGameDrawing
-import pdb
 # ==============================================================================
 # -- Global functions ----------------------------------------------------------
 # ==============================================================================
@@ -724,7 +723,22 @@ class CameraManager(object):
         '''
         # Camera locations are in world coordinates
         gt_loc = self.sensor.get_location()
-        self.gt_trajectories.append(np.array([gt_loc.x, gt_loc.y, gt_loc.z]).reshape((3,1)))
+        transform = self.sensor.get_transform()
+        # Get rotation in euler angles (in radians)
+        rotation = transform.rotation
+        roll = np.radians(rotation.roll)
+        pitch = np.radians(rotation.pitch)
+        yaw = np.radians(rotation.yaw)
+        
+        from scipy.spatial.transform import Rotation
+        # Convert euler angles to quaternion
+        r = Rotation.from_euler('xyz', [roll, pitch, yaw])
+        quat = r.as_quat()  # Returns [x, y, z, w]
+
+        # Reorder quaternion to [w, x, y, z] format
+        qw, qx, qy, qz = quat[3], quat[0], quat[1], quat[2]
+        
+        self.gt_trajectories.append(np.array([gt_loc.x, gt_loc.y, gt_loc.z, qw, qx, qy, qz]).reshape((7,1)))
     
     def update_est_trajectories(self,latest_trajectory):
         '''Update the estimated trajectories list with the latest trajectory
