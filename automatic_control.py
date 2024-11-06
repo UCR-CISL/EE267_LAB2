@@ -67,6 +67,8 @@ from agents.navigation.constant_velocity_agent import ConstantVelocityAgent  # p
 from agents.navigation.agent_wrapper import AgentWrapper  # pylint: disable=import-error
 
 from utils.transform import Transform
+from scipy.spatial.transform import Rotation
+
 # from utils.pygame_drawing import PyGameDrawing
 # ==============================================================================
 # -- Global functions ----------------------------------------------------------
@@ -741,18 +743,68 @@ class CameraManager(object):
         
         self.gt_trajectories.append(np.array([gt_loc.x, gt_loc.y, gt_loc.z, qw, qx, qy, qz]).reshape((7,1)))
     
+    def get_rel_traj(self):
+        # TESTING:
+        # Transform gt_trajectory with respect to frame 0 to get relative trajectory.
+        f0 = self.gt_trajectories[0]
+        f0_pos = f0[:3]
+        f0_quat = f0[3:]
+        # Reorder from [w, x, y, z] to [x, y, z, w]
+        quat_reordered = np.array([f0_quat[1], f0_quat[2], f0_quat[3], f0_quat[0]]).flatten()
+
+        original_rot = Rotation.from_quat(quat_reordered.flatten())  # [x, y, z, w] format
+        original_rot = original_rot.as_matrix()
+
+        # Convert current pose to rel pose
+        f1 = self.gt_trajectories[-1]
+        f1_pos = f1[:3]
+        f1_quat = f1[3:]
+        # Reorder from [w, x, y, z] to [x, y, z, w]
+        quat_reordered = np.array([f1_quat[1], f1_quat[2], f1_quat[3], f1_quat[0]]).flatten()
+
+        original_rot_f1 = Rotation.from_quat(quat_reordered.flatten())  # [x, y, z, w] format
+        original_rot_f1 = original_rot_f1.as_euler('xyz')
+        
+        world2camera = np.array(self.sensor.get_transform().get_inverse_matrix())
+        world_point = np.append(f1_pos,1)
+        rel_pos = np.dot(world2camera, world_point)
+        rel_rot = np.dot(original_rot, original_rot_f1)
+        rel_quat = Rotation.from_euler('xyz',[rel_rot[0],rel_rot[1],rel_rot[2]]).as_quat()
+
+        # Convert back to world coords
+        camera2world = np.array(self.sensor.get_transform().get_matrix())
+        world_pos = np.dot(camera2world,rel_pos)
+        world_rot = np.dot(original_rot,rel_rot)
+        world_quat = Rotation.from_euler('xyz',[world_rot[0],world_rot[1],world_rot[2]]).as_quat()
+        # pdb.set_trace()
+        self.est_trajectories.append(np.hstack((world_pos[:3],world_quat)).reshape((7,1)))
+        
+    
     def update_est_trajectories(self,latest_trajectory):
         '''Update the estimated trajectories list with the latest trajectory
             :param latest_trajectory (4,)
         '''
         # Convert estimated trajectory from camera to world
         camera2world = np.array(self.sensor.get_transform().get_matrix()) # (4x4) A Matrix
-        
+
+        # Obtain frame 0 reference rotation
+        f0 = self.gt_trajectories[0]
+        f0_quat = f0[3:]
+        # Reorder from [w, x, y, z] to [x, y, z, w]
+        quat_reordered = np.array([f0_quat[1], f0_quat[2], f0_quat[3], f0_quat[0]]).flatten()
+
+        original_rot = Rotation.from_quat(quat_reordered.flatten())  # [x, y, z, w] format
+        original_rot = original_rot.as_matrix()
+
+        # Translate local trajectory to world 
         if latest_trajectory != None:
-            world_traj = np.dot(camera2world, latest_trajectory)
-            # TODO: Transform orientation w respect to gt frame 0
-            # TODO: Convert roll, pitch, yaw to quaternion
-            self.est_trajectories.append(world_traj)
+            rel_pos = latest_trajectory[:3] # [x,y,z]
+            rel_rot = latest_trajectory[3:] # [roll, pitch, yaw]
+
+            world_pos = np.dot(camera2world,rel_pos)
+            world_rot = np.dot(original_rot,rel_rot)
+            world_quat = Rotation.from_euler('xyz',[world_rot[0],world_rot[1],world_rot[2]]).as_quat()
+            self.est_trajectories.append(np.hstack((world_pos[:3],world_quat)).reshape((7,1)))
         
     def project_to_lidar_pygame(self, points):
         """Transform lidar points from LiDAR 3D coordinates to pygame BEV 2D plane
@@ -772,9 +824,6 @@ class CameraManager(object):
 
         if not self:
             return
-
-        # obtain gt_trajectory
-        self.get_gt_trajectory()
         
         if self.sensors[self.index][0].startswith('sensor.lidar'):
             points = np.frombuffer(image.raw_data, dtype=np.dtype('f4'))
@@ -862,6 +911,8 @@ def game_loop(args):
 
         clock = pygame.time.Clock()
 
+        rel_traj = []
+
         while True:
             clock.tick()
             if args.sync:
@@ -874,6 +925,10 @@ def game_loop(args):
             world.tick(clock)
             world.render(display)
             pygame.display.flip()
+            
+            # obtain gt_trajectory
+            world.camera_manager.get_gt_trajectory()
+            # rel_traj.append(world.camera_manager.get_rel_traj()) # TESTING
 
             # Update with latest trajectory
             world.camera_manager.update_est_trajectories(agent.latest_trajectory)
@@ -902,8 +957,10 @@ def game_loop(args):
             settings.fixed_delta_seconds = None
             world.world.apply_settings(settings)
             traffic_manager.set_synchronous_mode(True)
-            agent.destroy(world.camera_manager.gt_trajectories, world.camera_manager.est_trajectories)
+            gt_traj = world.camera_manager.gt_trajectories
+            est_traj = world.camera_manager.est_trajectories
             world.destroy()
+            agent.destroy(gt_traj, est_traj)
 
         pygame.quit()
 
