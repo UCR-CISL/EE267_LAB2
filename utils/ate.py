@@ -24,13 +24,13 @@ class AbsoluteTrajectoryError:
     def __init__(self, traj_gt, traj_est):
         self.traj_est = traj_est
         self.traj_gt = traj_gt
+        self.traj_err=None
     
     def compute_trajectory_error(self):
         """
         Compute ATE between estimated and ground truth trajectories
         Input format for each trajectory: [x, y, z, qw, qx, qy, qz]
         """
-
         # Ensure trajectories have same length
         assert len(self.traj_est) == len(self.traj_gt), "Trajectories must have same length"
         
@@ -60,7 +60,8 @@ class AbsoluteTrajectoryError:
                 'position_error': pos_error,
                 'rotation_error': rot_error
             })
-            
+        
+        self.traj_err = errors 
         return errors
     
     def get_statistics(self):
