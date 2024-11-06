@@ -86,8 +86,9 @@ class BehaviorAgent(BasicAgent):
         ate = AbsoluteTrajectoryError(gt_trajectories, est_trajectories)
         err = ate.compute_trajectory_error()
         print('Errors:',err)
-        stats = ate.get_statisticsI()
+        stats = ate.get_statistics()
         print(stats)
+        ate.plot_traj()
         pass
     
     def sensors(self):  # pylint: disable=no-self-use
