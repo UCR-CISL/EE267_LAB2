@@ -724,6 +724,7 @@ class CameraManager(object):
         # Camera locations are in world coordinates
         gt_loc = self.sensor.get_location()
         transform = self.sensor.get_transform()
+
         # Get rotation in euler angles (in radians)
         rotation = transform.rotation
         roll = np.radians(rotation.roll)
@@ -749,6 +750,8 @@ class CameraManager(object):
         
         if latest_trajectory != None:
             world_traj = np.dot(camera2world, latest_trajectory)
+            # TODO: Transform orientation w respect to gt frame 0
+            # TODO: Convert roll, pitch, yaw to quaternion
             self.est_trajectories.append(world_traj)
         
     def project_to_lidar_pygame(self, points):
@@ -769,6 +772,9 @@ class CameraManager(object):
 
         if not self:
             return
+
+        # obtain gt_trajectory
+        self.get_gt_trajectory()
         
         if self.sensors[self.index][0].startswith('sensor.lidar'):
             points = np.frombuffer(image.raw_data, dtype=np.dtype('f4'))
@@ -779,9 +785,7 @@ class CameraManager(object):
             lidar_img = np.zeros(lidar_img_size)
             lidar_img[tuple(lidar_data.T)] = (255, 255, 255)
             self.surface = pygame.surfarray.make_surface(lidar_img)
-        else:
-            # obtain gt_trajectory
-            self.get_gt_trajectory()
+        else:            
 
             image.convert(self.sensors[self.index][1])
             array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
