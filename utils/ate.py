@@ -50,8 +50,8 @@ class AbsoluteTrajectoryError:
             
             # Compute relative transformation
             R_rel = R_gt.T @ R_est
-            t_rel = R_gt.T @ (p_est - p_gt)
-            
+            t_rel = (p_est - p_gt)
+
             # Compute error
             pos_error = np.linalg.norm(t_rel)
             rot_error = np.arccos((np.trace(R_rel) - 1) / 2)
@@ -87,6 +87,62 @@ class AbsoluteTrajectoryError:
         }
         
         return stats
+
+    def plot_traj(self, save_path=None):
+        """
+        Plot estimated and ground truth trajectories in 3D
+        
+        Parameters:
+            save_path (str): Optional path to save the plot
+        """
+        import matplotlib.pyplot as plt
+        from mpl_toolkits.mplot3d import Axes3D
+        
+        # Extract positions from trajectories
+        est_pos = np.array([pose[:3].flatten() for pose in self.traj_est])
+        gt_pos = np.array([pose[:3].flatten() for pose in self.traj_gt])
+        
+        # Create figure
+        fig = plt.figure(figsize=(10, 8))
+        ax = fig.add_subplot(111, projection='3d')
+        
+        # Plot trajectories
+        ax.plot(est_pos[:, 0], est_pos[:, 1], est_pos[:, 2], 
+                'r-', label='Estimated', linewidth=2)
+        ax.plot(gt_pos[:, 0], gt_pos[:, 1], gt_pos[:, 2], 
+                'b--', label='Ground Truth', linewidth=2)
+        
+        # Plot start and end points
+        ax.scatter(est_pos[0, 0], est_pos[0, 1], est_pos[0, 2], 
+                c='red', marker='o', s=100, label='Start')
+        ax.scatter(est_pos[-1, 0], est_pos[-1, 1], est_pos[-1, 2], 
+                c='green', marker='s', s=100, label='End')
+        
+        # Customize plot
+        ax.set_xlabel('X [m]')
+        ax.set_ylabel('Y [m]')
+        ax.set_zlabel('Z [m]')
+        ax.set_title('Trajectory Comparison')
+        ax.legend()
+        
+        # Make axes equal
+        max_range = np.array([est_pos.max(0) - est_pos.min(0),
+                            gt_pos.max(0) - gt_pos.min(0)]).max() / 2.0
+        mid_x = (est_pos[:, 0].mean() + gt_pos[:, 0].mean()) * 0.5
+        mid_y = (est_pos[:, 1].mean() + gt_pos[:, 1].mean()) * 0.5
+        mid_z = (est_pos[:, 2].mean() + gt_pos[:, 2].mean()) * 0.5
+        ax.set_xlim(mid_x - max_range, mid_x + max_range)
+        ax.set_ylim(mid_y - max_range, mid_y + max_range)
+        ax.set_zlim(mid_z - max_range, mid_z + max_range)
+        
+        # Add grid
+        ax.grid(True)
+        
+        if save_path:
+            plt.savefig(save_path)
+        
+        plt.show()
+
 
 if __name__ == '__main__':
     # Create dummy data
@@ -143,6 +199,31 @@ if __name__ == '__main__':
     ate = AbsoluteTrajectoryError(gt_trajectories, est_trajectories)
     ate.traj_err = ate.compute_trajectory_error()
     stats = ate.get_statistics()
+
+    # Add plotting
+    ate.plot_traj()
+    
+    # Print results
+    print("\nTrajectory Error Statistics:")
+    print(f"RMSE Position Error: {stats['rmse_position']:.3f} meters")
+    print(f"Mean Position Error: {stats['mean_position']:.3f} meters")
+    print(f"Median Position Error: {stats['median_position']:.3f} meters")
+    print(f"Std Position Error: {stats['std_position']:.3f} meters")
+    print(f"\nRMSE Rotation Error: {stats['rmse_rotation']:.3f} radians")
+    print(f"Mean Rotation Error: {stats['mean_rotation']:.3f} radians")
+    print(f"Median Rotation Error: {stats['median_rotation']:.3f} radians")
+    print(f"Std Rotation Error: {stats['std_rotation']:.3f} radians")
+
+    # Repeat experiment with gt_traj = est_traj
+    est_trajectories = gt_trajectories
+
+    # Compute ATE
+    ate = AbsoluteTrajectoryError(gt_trajectories, est_trajectories)
+    ate.traj_err = ate.compute_trajectory_error()
+    stats = ate.get_statistics()
+
+    # Add plotting
+    ate.plot_traj()
     
     # Print results
     print("\nTrajectory Error Statistics:")
