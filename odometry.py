@@ -25,7 +25,7 @@ class Odometry:
         ]
 
         """
-        # Do not change
+        # Feel free to change the sensor setup to your requirement
         sensors = [
             {'type': 'sensor.camera.rgb', 'x': 0.7, 'y': -0.4, 'z': 1.60, 'roll': 0.0, 'pitch': 0.0, 'yaw': 0.0,
                       'width': 1280, 'height': 720, 'fov': 100, 'id': 'Left'},
