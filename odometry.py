@@ -36,8 +36,9 @@ class Odometry:
 
         return sensors
 
-    def get_trajectory(self, sensor_data, prev_sensor_data):
-        """Compute trajectory using 
+    def get_pose(self, sensor_data, prev_sensor_data):
+        """Compute pose using current sensor data and previous sensor data.
+        This method should return relative pose [x,y,z,roll,pitch,yaw]
         """
         # Prev sensor data on initialization would be None
         if prev_sensor_data is None:
