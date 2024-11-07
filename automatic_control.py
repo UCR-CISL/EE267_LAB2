@@ -638,8 +638,6 @@ class CameraManager(object):
             item.append(blp)
         self.index = None # Sensor index
 
-        self.visualize_trajectory = False # Trigger for visualization
-
         self.gt_trajectories = []
         self.est_trajectories = []
 
@@ -673,11 +671,6 @@ class CameraManager(object):
 
             self.sensors.append(sensor)
             self._camera_transforms.append(transform)
-
-    def add_trajectory_visualizer(self):
-        '''
-        '''
-        # TODO: Display actual trajectory and estimated trajectory
 
     def toggle_camera(self):
         """Activate a camera"""
@@ -720,8 +713,8 @@ class CameraManager(object):
         if self.surface is not None:
             display.blit(self.surface, (0, 0))
     
-    def get_gt_trajectory(self):
-        '''Get camera trajectory from blueprint
+    def get_gt_pose(self):
+        '''Get camera pose from blueprint at current timestamp
         '''
         # Camera locations are in world coordinates
         gt_loc = self.sensor.get_location()
@@ -743,7 +736,7 @@ class CameraManager(object):
         
         self.gt_trajectories.append(np.array([gt_loc.x, gt_loc.y, gt_loc.z, qw, qx, qy, qz]).reshape((7,1)))
     
-    def get_rel_traj(self):
+    def get_rel_pose(self):
         # TESTING:
         # Transform gt_trajectory with respect to frame 0 to get relative trajectory.
         f0 = self.gt_trajectories[0]
@@ -780,11 +773,11 @@ class CameraManager(object):
         self.est_trajectories.append(np.hstack((world_pos[:3],world_quat)).reshape((7,1)))
         
     
-    def update_est_trajectories(self,latest_trajectory):
-        '''Update the estimated trajectories list with the latest trajectory
-            :param latest_trajectory (4,)
+    def update_est_trajectories(self,latest_pose):
+        '''Update the estimated trajectories list with the latest pose
+            :param latest_pose (6,) 6DoF [x,y,z,roll,pitch,yaw]
         '''
-        # Convert estimated trajectory from camera to world
+        # Convert estimated pose from camera to world
         camera2world = np.array(self.sensor.get_transform().get_matrix()) # (4x4) A Matrix
 
         # Obtain frame 0 reference rotation
@@ -796,10 +789,10 @@ class CameraManager(object):
         original_rot = Rotation.from_quat(quat_reordered.flatten())  # [x, y, z, w] format
         original_rot = original_rot.as_matrix()
 
-        # Translate local trajectory to world 
-        if latest_trajectory != None:
-            rel_pos = latest_trajectory[:3] # [x,y,z]
-            rel_rot = latest_trajectory[3:] # [roll, pitch, yaw]
+        # Translate local pose to world 
+        if latest_pose != None:
+            rel_pos = latest_pose[:3] # [x,y,z]
+            rel_rot = latest_pose[3:] # [roll, pitch, yaw]
 
             world_pos = np.dot(camera2world,rel_pos)
             world_rot = np.dot(original_rot,rel_rot)
@@ -926,12 +919,12 @@ def game_loop(args):
             world.render(display)
             pygame.display.flip()
             
-            # obtain gt_trajectory
-            world.camera_manager.get_gt_trajectory()
-            # rel_traj.append(world.camera_manager.get_rel_traj()) # TESTING
+            # obtain gt_pose
+            world.camera_manager.get_gt_pose()
+            # rel_traj.append(world.camera_manager.get_rel_pose()) # TESTING
 
-            # Update with latest trajectory
-            world.camera_manager.update_est_trajectories(agent.latest_trajectory)
+            # Update with latest pose
+            world.camera_manager.update_est_trajectories(agent.latest_pose)
 
             if agent.done():
                 if args.loop:
