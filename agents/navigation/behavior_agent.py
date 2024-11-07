@@ -73,8 +73,8 @@ class BehaviorAgent(BasicAgent):
         # Initalize Odometry
         self._odometry = Odometry()
 
-        # Latest trajectory
-        self.latest_trajectory = None
+        # Latest pose
+        self.latest_pose = None
 
         # Keep track of prev sensor data
         self.prev_sensor_data = None
@@ -284,8 +284,8 @@ class BehaviorAgent(BasicAgent):
         # SLAM (Modify as needed)
         sensor_data = self.get_sensor_data()
 
-        # Update latest estimated trajectory
-        self.latest_trajectory = self._odometry.get_trajectory(sensor_data, self.prev_sensor_data)
+        # Update latest estimated pose
+        self.latest_pose = self._odometry.get_pose(sensor_data, self.prev_sensor_data)
 
         # Update prev sensor data
         self.prev_sensor_data = sensor_data
